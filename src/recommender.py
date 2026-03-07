@@ -1,5 +1,7 @@
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
+import numpy as np
+import pandas as pd
 
 @dataclass
 class Song:
