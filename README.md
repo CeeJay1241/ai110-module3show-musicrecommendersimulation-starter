@@ -17,17 +17,82 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world music recommenders like Spotify or YouTube Music use massive amounts of data — your listening history, songs you skipped, time of day, what other users with similar taste enjoyed — and run it through complex machine learning models to predict what you'll want to hear next. They are constantly learning and updating. My version is much simpler, but it captures the same core idea: match a song's characteristics to what a user actually likes. Instead of learning from behavior over time, my system uses a hand-crafted scoring rule that directly compares a song's features to a user's stated preferences. The priority here is transparency — you can look at the score and understand exactly why a song ranked where it did, which is something real recommenders often can't offer.
 
-Some prompts to answer:
+### Song Features
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+Each `Song` object stores the following attributes used in scoring:
 
-You can include a simple diagram or bullet list if helpful.
+- `genre` — the broad musical category (e.g., pop, hip-hop, jazz)
+- `mood` — the emotional tone of the track (e.g., happy, chill, intense)
+- `energy` — a 0.0–1.0 float representing how intense or active the song feels
+- `tempo_bpm` — beats per minute, how fast the song moves
+- `valence` — a 0.0–1.0 float for how positive or upbeat the song sounds
+- `danceability` — a 0.0–1.0 float for how suitable the song is for dancing
+- `acousticness` — a 0.0–1.0 float indicating how acoustic (vs. electronic) the song is
+
+### UserProfile Features
+
+Each `UserProfile` stores the following preferences used to score songs:
+
+- `favorite_genre` — the genre the user most wants to hear
+- `favorite_mood` — the mood the user is in or prefers
+- `target_energy` — the energy level the user is looking for (0.0–1.0)
+- `likes_acoustic` — a true/false flag for whether the user prefers acoustic-sounding songs
+
+### Scoring Algorithm Recipe
+
+The recommender uses a point-based scoring system to rank songs:
+
+| Factor | Points | Rule |
+|--------|--------|------|
+| **Genre match** | +2.0 | Exact match between song genre and user's `favorite_genre` |
+| **Mood match** | +1.0 | Exact match between song mood and user's `favorite_mood` |
+| **Energy similarity** | 0.0 to +1.0 | `1.0 - abs(song_energy - target_energy)`, scaled by 1.0 |
+| **Tempo similarity** | 0.0 to +0.5 | Normalized distance from `target_tempo_bpm` (±160 BPM window) |
+| **Valence similarity** | 0.0 to +0.4 | How close song valence is to `target_valence` |
+| **Danceability similarity** | 0.0 to +0.4 | How close song danceability is to `target_danceability` |
+| **Acousticness fit** | 0.0 to +0.3 | Based on user's acoustic preference |
+
+**Maximum possible score:** ~4.5 points
+
+**Example:** A "house" song with high energy (0.89), high danceability (0.91), and low acousticness (0.08) will score highest for a user who prefers `favorite_genre="house"`, `favorite_mood="euphoric"`, and targets high energy/danceability. In contrast, a "rock" song with intense mood and high energy will score lower for the same user unless rock is also a secondary preference.
+
+This weighting balances precision (genre and mood are weighted heavily) with flexibility (numeric features allow near-matches to score well).
+
+## Terminal Recommendation Output
+
+![Terminal recommendations screenshot](recommendations-terminal.png)
+
+### Data Flow Visualization
+
+The system follows a simple three-step pipeline:
+
+```
+Input (User Prefs) → Process (Score each song) → Output (Top K ranked by score)
+```
+
+#### Step-by-Step Process:
+
+1. **Input:** User provides a `taste_profile` with preferred genre, mood, and numeric targets.
+2. **Process:** For each song in `data/songs.csv`, calculate a score by:
+   - Adding 2.0 points if genre matches
+   - Adding 1.0 point if mood matches
+   - Adding similarity points (0.0–1.0) for energy, tempo, valence, danceability, acousticness
+3. **Output:** Return the top K songs ranked by total score (highest first).
+
+This transparent, explainable approach means you can see exactly *why* each song was recommended.
+
+### Known Biases and Limitations
+
+Because this system uses a hand-crafted scoring rule, it has predictable strengths and weaknesses:
+
+- **Genre/Mood Over-Prioritization:** The system awards +2.0 and +1.0 points for exact genre and mood matches. If a song's genre doesn't match by name, it will score lower even if it's musically very similar. For example, "synthwave" songs might not match a user looking for "electronic" or "synth-pop."
+- **Small Dataset Bias:** With only 18 songs, recommendations reflect whoever created this dataset. If only certain artists or eras are represented, the system will naturally favor them.
+- **Binary Genre/Mood Matching:** The system checks for *exact* string matches. "hip-hop" ≠ "hip hop" ≠ "rap," which could lead to missed connections.
+- **Ignores Lyrics and Artist:** The system doesn't consider song lyrics, artist popularity, or "cultural moment." A deep or controversial lyric won't change the score.
+- **No Diversity Penalty:** If all top K recommendations happen to be from the same artist or share the same sub-genre, the system won't penalize or diversify automatically.
+- **No Personalization Over Time:** Unlike Spotify or YouTube Music, this system doesn't learn from user behavior. The same `taste_profile` always produces the same ranking.
 
 ---
 
@@ -52,6 +117,12 @@ pip install -r requirements.txt
 
 ```bash
 python -m src.main
+```
+
+You can override the default taste profile from the command line:
+
+```bash
+python -m src.main --genre pop --mood happy --energy 0.8 --k 5
 ```
 
 ### Running Tests
