@@ -17,14 +17,34 @@ except ImportError:
     from recommender import load_songs, recommend_songs
 
 
+USER_PROFILES = {
+    "High-Energy Pop": {
+        "favorite_genre": "pop",
+        "favorite_mood": "happy",
+        "target_energy": 0.90,
+    },
+    "Chill Lofi": {
+        "favorite_genre": "lofi",
+        "favorite_mood": "chill",
+        "target_energy": 0.35,
+    },
+    "Deep Intense Rock": {
+        "favorite_genre": "rock",
+        "favorite_mood": "intense",
+        "target_energy": 0.92,
+    },
+}
+
+
 def parse_args() -> argparse.Namespace:
+    default_profile = USER_PROFILES["High-Energy Pop"]
     parser = argparse.ArgumentParser(description="Run the music recommender from the command line.")
-    parser.add_argument("--genre", default="pop", help="Favorite genre (default: pop)")
-    parser.add_argument("--mood", default="happy", help="Favorite mood (default: happy)")
+    parser.add_argument("--genre", default=default_profile["favorite_genre"], help="Favorite genre (default: pop)")
+    parser.add_argument("--mood", default=default_profile["favorite_mood"], help="Favorite mood (default: happy)")
     parser.add_argument(
         "--energy",
         type=float,
-        default=0.80,
+        default=default_profile["target_energy"],
         help="Target energy from 0.0 to 1.0 (default: 0.80)",
     )
     parser.add_argument("--k", type=int, default=5, help="Number of recommendations to return (default: 5)")

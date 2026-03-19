@@ -45,15 +45,15 @@ class Recommender:
         reasons: List[str] = []
 
         if song.genre.lower() == user.favorite_genre.lower():
-            score += 2.0
-            reasons.append("genre match +2.00")
+            score += 1.0
+            reasons.append("genre match +1.00")
 
         if song.mood.lower() == user.favorite_mood.lower():
             score += 1.0
             reasons.append("mood match +1.00")
 
         energy_similarity = max(0.0, 1.0 - abs(song.energy - user.target_energy))
-        energy_points = 1.0 * energy_similarity
+        energy_points = 2.0 * energy_similarity
         score += energy_points
         reasons.append(f"energy similarity +{energy_points:.2f}")
 
@@ -95,8 +95,8 @@ def _get_song_score(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
 
     genre_pref = user_prefs.get("favorite_genre") or user_prefs.get("genre")
     if genre_pref and str(song["genre"]).lower() == str(genre_pref).lower():
-        score += 2.0
-        reasons.append("genre match +2.00")
+        score += 1.0
+        reasons.append("genre match +1.00")
 
     mood_pref = user_prefs.get("favorite_mood") or user_prefs.get("mood")
     if mood_pref and str(song["mood"]).lower() == str(mood_pref).lower():
@@ -106,7 +106,7 @@ def _get_song_score(song: Dict, user_prefs: Dict) -> Tuple[float, str]:
     target_energy = user_prefs.get("target_energy", user_prefs.get("energy"))
     if target_energy is not None:
         energy_similarity = max(0.0, 1.0 - abs(float(song["energy"]) - float(target_energy)))
-        energy_points = 1.0 * energy_similarity
+        energy_points = 2.0 * energy_similarity
         score += energy_points
         reasons.append(f"energy similarity +{energy_points:.2f}")
 

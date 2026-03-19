@@ -62,7 +62,7 @@ This weighting balances precision (genre and mood are weighted heavily) with fle
 
 ## Terminal Recommendation Output
 
-![Terminal recommendations screenshot](recommendations-terminal.png)
+![Terminal recommendations screenshot](docs/recommendations-terminal.png)
 
 ### Data Flow Visualization
 
@@ -144,6 +144,76 @@ Use this section to document the experiments you ran. For example:
 - What happened when you changed the weight on genre from 2.0 to 0.5
 - What happened when you added tempo or valence to the score
 - How did your system behave for different types of users
+
+### Adversarial / Edge-Case Profiles
+
+These profiles are designed to probe whether the scoring logic can be tricked or produce unexpected rankings.
+
+#### 1) Conflicting Mood with High Energy
+
+Command:
+
+```bash
+python -m src.main --genre pop --mood sad --energy 0.9 --k 5
+```
+
+Observed top 5:
+
+1. Gym Hero — Max Pulse (2.97)
+2. Sunrise City — Neon Echo (2.92)
+3. Storm Runner — Voltline (0.99)
+4. Neon Tides — Prism Harbor (0.99)
+5. Golden Plaza — Solar Mercado (0.97)
+
+Screenshot:
+
+![Adversarial profile 1 terminal output](docs/adversarial-profile-1.png)
+
+#### 2) Contradictory Taste: Classical + Intense + Very High Energy
+
+Command:
+
+```bash
+python -m src.main --genre classical --mood intense --energy 0.95 --k 5
+```
+
+Observed top 5:
+
+1. Afterglow Sonata — Blue Ivory (2.29)
+2. Gym Hero — Max Pulse (1.98)
+3. Storm Runner — Voltline (1.96)
+4. Iron Anthem — Black Meridian (1.00)
+5. Neon Tides — Prism Harbor (0.94)
+
+Screenshot:
+
+![Adversarial profile 2 terminal output](docs/adversarial-profile-2.png)
+
+#### 3) Ambient + Aggressive + Very Low Energy
+
+Command:
+
+```bash
+python -m src.main --genre ambient --mood aggressive --energy 0.1 --k 5
+```
+
+Observed top 5:
+
+1. Spacewalk Thoughts — Orbit Bloom (2.82)
+2. Iron Anthem — Black Meridian (1.15)
+3. Afterglow Sonata — Blue Ivory (0.86)
+4. Library Rain — Paper Lanterns (0.75)
+5. Frosted Pines — Hearth & Hollow (0.74)
+
+Screenshot:
+
+![Adversarial profile 3 terminal output](docs/adversarial-profile-3.png)
+
+Quick observations:
+
+- Exact genre and mood matches can outweigh low similarity in energy.
+- When mood does not exist in the dataset (e.g., `sad`), ranking leans heavily on genre and energy.
+- Conflicting profiles expose tradeoffs in fixed weighting and can produce surprising but explainable results.
 
 ---
 
